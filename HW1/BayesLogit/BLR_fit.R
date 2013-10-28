@@ -151,8 +151,6 @@ p = 2
 beta.0 <- matrix(c(0,0))
 Sigma.0.inv <- diag(rep(1.0,p))
 mu.0 = rep(0,p)
-niter <- 10000
-
 
 niter=10000
 burnin=10000
@@ -165,7 +163,7 @@ v.scale = 1.5
 sim_num = 
 
 # Extract X and y:
-file = paste("blr_data_",sim_num,".csv", sep="")
+file = paste("data/blr_data_",sim_num,".csv", sep="")
 
 dat = read.csv(file, header = TRUE, sep = ",", quote = "\"",
          dec = ".", fill = TRUE, comment.char = "", col.names=c("y","n","X1","X2"))
