@@ -163,9 +163,9 @@ v.scale = 1.5
 sim_num = 
 
 # Extract X and y:
-file = paste("data/blr_data_",sim_num,".csv", sep="")
+infile = paste("data/blr_data_",sim_num,".csv", sep="")
 
-dat = read.csv(file, header = TRUE, sep = ",", quote = "\"",
+dat = read.csv(infile, header = TRUE, sep = ",", quote = "\"",
          dec = ".", fill = TRUE, comment.char = "", col.names=c("y","n","X1","X2"))
 n = dat$n
 y = dat$y
