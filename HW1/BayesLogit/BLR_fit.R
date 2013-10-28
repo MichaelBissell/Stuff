@@ -160,10 +160,10 @@ v.scale = 1.5
 #################################################
 
 # Read data corresponding to appropriate sim_num:
-sim_num = 
+
 
 # Extract X and y:
-infile = paste("data/blr_data_",sim_num,".csv", sep="")
+infile = paste("/data/blr_data_",sim_num,".csv", sep="")
 
 dat = read.csv(infile, header = TRUE, sep = ",", quote = "\"",
          dec = ".", fill = TRUE, comment.char = "", col.names=c("y","n","X1","X2"))
@@ -181,7 +181,7 @@ q = seq(1:99)/100
 qtile = cbind(quantile(beta.est[,1], q), quantile(beta.est[,2], q))
 
 # Write results to a (99 x p) csv file...
-outfile = paste("results/blr_res_", sim_num, ".csv", sep="")
+outfile = paste("/results/blr_res_", sim_num, ".csv", sep="")
 write.table(x=qtile,file=outfile, sep=",", col.names=FALSE, row.names=FALSE)
               
 # Go celebrate.
