@@ -152,7 +152,7 @@ beta.0 <- matrix(c(0,0))
 Sigma.0.inv <- diag(rep(1.0,p))
 mu.0 = rep(0,p)
 niter <- 10000
-setwd("C:/Users/Michael/Documents/Michael UC Davis/STA 250 Adv Stat Computing/HW1")
+
 
 niter=10000
 burnin=10000
