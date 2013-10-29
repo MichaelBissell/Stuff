@@ -1,6 +1,6 @@
-rm(list=ls())
 
-# setwd(C:/Users/Michael/Documents/Michael UC Davis/STA 250 Adv Stat Computing/HW1)
+# Clear out everything in memory for a nice clean run and easier debugging
+rm(list=ls())
 
 ##
 #
@@ -12,7 +12,6 @@ rm(list=ls())
 ##
 
 library(mvtnorm)
-library(lattice)
 library(coda)
 
 ########################################################################################
@@ -53,33 +52,40 @@ if (length(args)==0){
 ########################################################################################
 
 
-# Compute posterior probabilities on **log** scale
+# Compute posterior probabilities on **log** scale for Binomial data with Normal Prior
 log.posterior <- function(n,y,X,beta,mu,Sigma.inv){
   return( t(y) %*% (X %*% beta) - t(n)%*%log(1+exp(X%*%beta)) 
           - 0.5*t(beta-mu) %*% Sigma.inv %*% (beta-mu) )
 }
 
 
+# Main function for the MCMC routine
 bayes.logreg <- function(n,y,X,beta.0,Sigma.0.inv,niter,burnin,
-                           print.every,retune,verbose=TRUE,mu,dims){
+                           print.every=1000,retune=100,verbose=TRUE,mu,dims){
+  
+  # Initialize vectors to store results
   beta.mat = matrix(0, nrow=burnin+niter, ncol=p)
   beta.mat[1,] = t(beta.0)
-  v = 1
   accept = logical(length=burnin+niter)
   
+  # Initial Variance to be scaled later as necessary
+  v = 1
+  
+  # First burnin and retune
   for (i in 1:burnin){
     
+    # Start with the current beta at time t
     beta.t = beta.mat[i,]
     
-    # Propose a new beta.star
+    # Propose a new beta.star from Normal proposal distribution
     beta.star = rmvnorm(n=1, mean=beta.t, sigma=v*diag(p))
     
     # Compute log posterior probabilities of beta.star and beta.t
-    
     log.posterior.beta.star = log.posterior(n,y,X,t(beta.star),mu.0,Sigma.0.inv)
     log.posterior.beta.t = log.posterior(n,y,X,beta.t,mu.0,Sigma.0.inv)
     log.posterior.beta.t.star  = log.posterior.beta.star - log.posterior.beta.t
     
+    # Remember we are on log-scale for the acceptance decision
     alpha = min(0,log.posterior.beta.t.star)
     log.u = log(runif(1))
     
@@ -91,7 +97,9 @@ bayes.logreg <- function(n,y,X,beta.0,Sigma.0.inv,niter,burnin,
       beta.mat[i+1,] = beta.t
     }
     
-    # Decide to retune the variance
+    # Decide to retune the variance every 100 (or retune) iterations
+    # If acceptance rate is too low, lower the variance by the scaling factor
+    # If acceptance rate is too high, raise the variance by the scaling factor
     if (i %% retune == 0){
       accept.rate = sum(accept[(i-(retune-1)):i])/retune
       if ( accept.rate < accept.rate.low ){
@@ -99,42 +107,51 @@ bayes.logreg <- function(n,y,X,beta.0,Sigma.0.inv,niter,burnin,
       } else if (accept.rate > accept.rate.high){
         v = v*v.scale  
       } # else do not change v
-      print( paste("Iteration: ",i, "   Acceptence: ", accept.rate, "   prop.var: ", v, sep="") )  
+    }
+   
+    # Print out iteration, acceptance percentage
+    if (i %% print.every == 0){
+      print(    paste("Iteration: ",i, " Accepted:", accept.rate, sep="")            )
+      
     }
   }
+  
+  # After burnin and tuning, run the main iterations
+  for (i in (burnin+1):(burnin+niter-1)){
     
-    for (i in (burnin+1):(burnin+niter-1)){
+    beta.t = beta.mat[i,]
+    
+    # Propose a new beta.star from Normal proposal distribution
+    beta.star = rmvnorm(n=1, mean=beta.t, sigma=v*diag(p))
+    
+    # Compute log posterior probabilities of beta.star and beta.t
+    log.posterior.beta.star = log.posterior(n,y,X,t(beta.star),mu.0,Sigma.0.inv)
+    log.posterior.beta.t = log.posterior(n,y,X,beta.t,mu.0,Sigma.0.inv)
+    log.posterior.beta.t.star  = log.posterior.beta.star - log.posterior.beta.t
+    
+    # Remember we are on log-scale for the acceptance decision
+    alpha = min(0,log.posterior.beta.t.star)
+    log.u = log(runif(1))
+    
+    # Accept new beta.star if alpha > log.u (i.e when alpha is positive since log-scale)
+    if (log.u < alpha){
+      beta.mat[i+1,] = beta.star
+      accept[i] = TRUE
+    } else {
+      beta.mat[i+1,] = beta.t
+    }
+    
+    # Print out iteration, acceptance percentage
+    accept.rate = sum(accept[(i-(print.every-1)):i])/print.every
+    if (i %% print.every == 0){
+      print(    paste("Iteration: ",i, " Accepted:", accept.rate, sep="")            )
       
-      beta.t = beta.mat[i,]
-      
-      # Propose a new beta.star
-      beta.star = rmvnorm(n=1, mean=beta.t, sigma=v*diag(p))
-      
-      # Compute log posterior probabilities of beta.star and beta.t
-      
-      log.posterior.beta.star = log.posterior(n,y,X,t(beta.star),mu.0,Sigma.0.inv)
-      log.posterior.beta.t = log.posterior(n,y,X,beta.t,mu.0,Sigma.0.inv)
-      log.posterior.beta.t.star  = log.posterior.beta.star - log.posterior.beta.t
-      
-      alpha = min(0,log.posterior.beta.t.star)
-      log.u = log(runif(1))
-      
-      # Accept new beta.star if alpha > log.u (i.e when alpha is positive since log-scale)
-      if (log.u < alpha){
-        beta.mat[i+1,] = beta.star
-        accept[i] = TRUE
-      } else {
-        beta.mat[i+1,] = beta.t
-      }
-      
-      # Print out iteration, acceptance percentage
-      accept.rate = sum(accept[(i-(print.every-1)):i])/print.every
-      if (i %% print.every == 0){
-        print( paste("Iteration: ",i, "   Acceptence: ", accept.rate, "   prop.var: ", v, sep="") )
-      }
+    }
+    
   }
-    
-  return(cbind(beta.mat, accept, v))
+  
+  # Return back results
+  return(cbind(beta.mat, accept))
 }
 
 
@@ -142,29 +159,32 @@ bayes.logreg <- function(n,y,X,beta.0,Sigma.0.inv,niter,burnin,
 #################################################
 # Set up the specifications:
 
-p = 2
-beta.0 <- matrix(c(0,0))
-Sigma.0.inv <- diag(rep(1.0,p))
-mu.0 = rep(0,p)
+p = 2 # number of dimensions to pass into the main function
+beta.0 <- matrix(rep(1.0,p)) # initialize zero as starting values
+Sigma.0.inv <- diag(rep(1.0,p)) # initialize identity for Normal prior covariance matrix
+mu.0 = rep(0,p) # initialize mean zero for Normal prior
 
-niter=10000
-burnin=10000
-accept.rate.low = 0.25
+# setwd("C:/Users/Michael/Documents/Michael UC Davis/STA 250 Adv Stat Computing/HW1")
+
+burnin=10000 # number of iterations to burnin and retune
+niter=10000 # number of iterations to run after burnin
+
+# Initialize the target acceptance rate range to pass into the tuning
+accept.rate.low = 0.25 
 accept.rate.high = 0.60
-v.scale = 1.5
 
-sim_num = 1200
+# Initialize a variance scaling factor to tune the variance of the proposal
+v.scale = 1.5
 
 #################################################
 
 # Read data corresponding to appropriate sim_num:
+# sim_num = 1200  # just for local testing
 
+# Read in data and Extract X and y:
+file = paste("blr_data_",sim_num,".csv", sep="")
 
-# Extract X and y:
-# infile = paste("data/blr_data_",sim_num,".csv", sep="")
-infile = paste("blr_data_",sim_num,".csv", sep="")
-
-dat = read.csv(infile, header = TRUE, sep = ",", quote = "\"",
+dat = read.csv(file, header = TRUE, sep = ",", quote = "\"",
          dec = ".", fill = TRUE, comment.char = "", col.names=c("y","n","X1","X2"))
 n = dat$n
 y = dat$y
@@ -174,13 +194,12 @@ X = cbind(dat$X1,dat$X2)
 beta.est = bayes.logreg(n,y,X,beta.0,Sigma.0.inv,niter,burnin,
                            print.every=1000,retune=100,verbose=FALSE,mu=mu.0, dims=p)
 
-
 # Extract posterior quantiles...
 q = seq(1:99)/100
 qtile = cbind(quantile(beta.est[,1], q), quantile(beta.est[,2], q))
 
 # Write results to a (99 x p) csv file...
-outfile = paste("results/blr_res_", sim_num, ".csv", sep="")
+outfile = paste("blr_res_", sim_num, ".csv", sep="")
 write.table(x=qtile,file=outfile, sep=",", col.names=FALSE, row.names=FALSE)
               
 # Go celebrate.
