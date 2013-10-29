@@ -1,4 +1,7 @@
 rm(list=ls())
+
+# setwd(C:/Users/Michael/Documents/Michael UC Davis/STA 250 Adv Stat Computing/HW1)
+
 ##
 #
 # Logistic regression
@@ -58,7 +61,7 @@ log.posterior <- function(n,y,X,beta,mu,Sigma.inv){
 
 
 bayes.logreg <- function(n,y,X,beta.0,Sigma.0.inv,niter,burnin,
-                           print.every=1000,retune=100,verbose=TRUE,mu,dims){
+                           print.every,retune,verbose=TRUE,mu,dims){
   beta.mat = matrix(0, nrow=burnin+niter, ncol=p)
   beta.mat[1,] = t(beta.0)
   v = 1
@@ -96,12 +99,7 @@ bayes.logreg <- function(n,y,X,beta.0,Sigma.0.inv,niter,burnin,
       } else if (accept.rate > accept.rate.high){
         v = v*v.scale  
       } # else do not change v
-    }
-   
-    # Print out iteration, acceptance percentage
-    if (i %% print.every == 0){
-      print(    paste("Iteration: ",i, " Accepted:", accept.rate, sep="")            )
-      
+      print( paste("Iteration: ",i, "   Acceptence: ", accept.rate, "   prop.var: ", v, sep="") )  
     }
   }
     
@@ -132,15 +130,11 @@ bayes.logreg <- function(n,y,X,beta.0,Sigma.0.inv,niter,burnin,
       # Print out iteration, acceptance percentage
       accept.rate = sum(accept[(i-(print.every-1)):i])/print.every
       if (i %% print.every == 0){
-        print(    paste("Iteration: ",i, " Accepted:", accept.rate, sep="")            )
-        
+        print( paste("Iteration: ",i, "   Acceptence: ", accept.rate, "   prop.var: ", v, sep="") )
       }
-    
   }
     
-    
-       
-  return(cbind(beta.mat, accept))
+  return(cbind(beta.mat, accept, v))
 }
 
 
@@ -158,13 +152,17 @@ burnin=10000
 accept.rate.low = 0.25
 accept.rate.high = 0.60
 v.scale = 1.5
+
+sim_num = 1200
+
 #################################################
 
 # Read data corresponding to appropriate sim_num:
 
 
 # Extract X and y:
-infile = paste("data/blr_data_",sim_num,".csv", sep="")
+# infile = paste("data/blr_data_",sim_num,".csv", sep="")
+infile = paste("blr_data_",sim_num,".csv", sep="")
 
 dat = read.csv(infile, header = TRUE, sep = ",", quote = "\"",
          dec = ".", fill = TRUE, comment.char = "", col.names=c("y","n","X1","X2"))
