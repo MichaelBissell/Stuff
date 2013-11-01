@@ -63,7 +63,7 @@ plot(u,v)
 
 library(ggplot2)
 df = data.frame(u,v)
-ggplot(df, aes(x=u, y=v)) + geom_point(alpha = 0.4)
+ggplot(df, aes(x=u, y=v)) + geom_point(alpha = 0.2)
 
 library(hexbin)
 bin<-hexbin(u, v, xbins=50)
@@ -98,7 +98,7 @@ for (i in 1:nchar){
 }
 
 # use readChar() to read in the file contents which maintains whitespace
-# scan() trims whitespace, file() is another option
+# scan() trims whitespace, file() is another option, Duncan said readLines()
 str_rebuild = ""
 for (i in 1:nchar){
   if (i<10){
@@ -110,7 +110,101 @@ for (i in 1:nchar){
 }
 
 
+##########
+# 4 Run sarray boot_camp_demo.py
+##########
 
+Done
+
+
+##########
+# 5 Twitter code
+##########
+
+NOT Done
+
+
+##########
+# 6 AR Models
+##########
+n = 1000
+nbatch = 200
+
+time = rep(1:n, nbatch)
+batch = rep(1:nbatch, each=n)
+rho = 0.9
+
+y = numeric(0)
+for (j in 1:nbatch){
+  x = numeric(n)
+  e = rnorm(n)
+  for (i in 2:n){
+    x[i] = rho*x[i-1] + e[i]
+  }
+  y = c(y,x)
+}
+
+df = data.frame(time, batch, y)
+
+# try smoothscatter()
+library(ggplot2)
+ggplot(df, aes(time, y, group=batch)) + geom_line(alpha = 0.05) + xlab("t") + ylab("y")
+
+
+
+mat = matrix(y, nrow=n, ncol=nbatch)
+
+# c. Compute the mean of the 200 realizations at each time points t=1,2,...,1000.
+# Plot the means.
+rmean = apply(mat, 1, mean) # means by rows
+plot(rmean, type="l")
+
+# d. Plot the variance of the 200 realizations at each time points t=1,2,...,1000.
+# Plot the variances.
+rvar = apply(mat, 1, var) # variance by rows
+plot(rvar, type="l")
+
+# e. Compute the mean of each of the 200 series across time points i=1,2,...,200.
+# Plot the means.
+cmean = apply(mat, 2, mean) # means by columns
+plot(cmean, type="l")
+
+# f. Compute the variance of each of the 200 series across time points i=1,2,...,200.
+# Plot the variances.
+cvar = apply(mat, 2, var) # variance by columns
+plot(cvar, type="l")
+
+# g. Justify the results you have seen in parts b.--f. theoretically.
+X_t ~ IIDNoise(mean = 0)
+e_t ~ WhiteNoise(mean=0, var=sigma^2=1)
+
+E[X_t] = E[ rho*X_t-1 + e_t ] = rho*E[X_t-1] + E[ e_t ] = rho*0 + 0 = 0
+
+Var[X_t] = Var[ rho*X_t-1 + e_t ] = rho^2*Var[X_t-1] + Var[ e_t ] 
+         = rho^2*Var[X_t] + sigma^2
+  --> Var(X_t) = sigma^2 / (1-rho^2) = 1/(1-0.9^2) = 5.26
+
+
+
+
+##########
+# 7 Monte Carlo Integration
+##########
+
+# a. Let Z ~N(0,1). Compute E[exp-Z2] using Monte Carlo integration.
+z = rnorm(100000)
+mean( exp(-z^2) )
+
+# b. Let Z Truncated-Normal(0,1;[-2,1]). Compute E[Z] using importance sampling.
+library(msm)
+trunc_norm = rtnorm(100000, mean=0, sd=1, lower=-2, upper=1)
+mean(trunc_norm)
+
+
+s = runif(100000, -2, 1)
+f = dtnorm(s)
+g = dunif(s,-2,1)
+sum(s*f/g)
 
 # Notes from lecture
 
