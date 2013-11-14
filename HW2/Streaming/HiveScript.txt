@@ -1,0 +1,45 @@
+Create job flow on AWS
+
+Master Public DNS Name:
+ec2-54-212-235-17.us-west-2.compute.amazonaws.com
+
+Must make the key private before using it to log into AWS:
+chmod 600 mcbissellAWSKeyPair.pem
+
+### From Peason, ssh into AWS: 
+ssh -i /home/mbissell/Stuff/HW2/Streaming/mcbissellAWSKeyPair.pem hadoop@ec2-54-212-235-17.us-west-2.compute.amazonaws.com
+
+CLI = cli = command line interface
+
+# Required folders for Hive tables
+$ hadoop fs -mkdir /tmp
+$ hadoop fs -mkdir /user/hive/warehouse
+$ hadoop fs -chmod g+w /tmp
+$ hadoop fs -chmod g+w /user/hive/warehouse 
+
+##Load Data From the Bucket
+$ hadoop fs -mkdir input
+$ hadoop distcp s3://sta250bucket/groups.txt input
+
+# Start Hive on AWS
+
+$ hive
+
+# Create Table in Hive
+CREATE TABLE data (group INT, obs DOUBLE) ROW FORMAT DELIMITED FIELDS TERMINATED BY '\t' STORED AS TEXTFILE;
+
+# Load Data into Table
+hive> LOAD DATA INPATH '/user/hadoop/input/groups.txt' OVERWRITE INTO TABLE data;
+
+# Extract the data from the Hive table to output file
+hive> INSERT OVERWRITE DIRECTORY '/user/hadoop/output/'
+    > SELECT group, avg(obs), variance(obs) FROM data
+    > GROUP by group;
+
+# Quite Hive and go back to Hadoop
+hive>quit;
+
+# Get the file from Hadoop to your local directory 
+$ hadoop fs -get /user/hadoop/output/ output
+
+# Plot results in R
