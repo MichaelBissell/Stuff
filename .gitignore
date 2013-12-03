@@ -1,4 +1,8 @@
+<<<<<<< HEAD
+ucdsta250.pem
+=======
 *.pem
+>>>>>>> 8ba6b20e52f0d822ad1010b86a139b10804a63be
 test-output/
 groups-output/
 mini-groups-output/

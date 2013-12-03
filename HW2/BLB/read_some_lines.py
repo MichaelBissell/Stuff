@@ -1,6 +1,9 @@
 import csv
 import sys
+<<<<<<< HEAD
+=======
 import numpy as np
+>>>>>>> 8ba6b20e52f0d822ad1010b86a139b10804a63be
 
 ## 
 #    filename: name of csv file
@@ -11,7 +14,11 @@ import numpy as np
 #     verbose: True/False, level of verbosity
 ##
 
+<<<<<<< HEAD
+def read_some_lines_csv(filename,indices,nr,nc,print_every=1000,verbose=False):
+=======
 def read_some_lines_csv(filename,indices,nr,nc,n,print_every=1000,verbose=False):
+>>>>>>> 8ba6b20e52f0d822ad1010b86a139b10804a63be
 	# Storage:
 	subset = np.empty(nr*nc)
 	subset.shape = (nr,nc)
