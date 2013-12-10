@@ -1,0 +1,4 @@
+"","user.self","sys.self","elapsed","user.child","sys.child"
+"copy_to_time",0.231999999999999,0.032,0.263999999999999,0,0
+"kernel_time",1.628,1.292,2.922,0,0
+"copy_from_time",0.0399999999999991,0.024,0.0670000000000002,0,0
