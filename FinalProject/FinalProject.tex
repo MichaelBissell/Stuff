@@ -1,0 +1,523 @@
+\documentclass[a4paper, 11pt]{report}
+
+\usepackage{amssymb, amstext, amsmath, amsthm, enumerate, float, graphicx, mathtools, csvsimple, bbm, calc, listings, textcomp, color}
+\usepackage[margin = .55in, footskip = 20pt]{geometry}  %geometry package to set margins thin
+
+
+\lstset{
+  language=R,
+  aboveskip={-10pt},
+  backgroundcolor=\color{white},   		% choose the background color; you must add \usepackage{color} or \usepackage{xcolor}
+  basicstyle=\tiny,        		% the size of the fonts that are used for the code
+  breakatwhitespace=false,         		% sets if automatic breaks should only happen at whitespace
+  breaklines=true,                		% sets automatic line breaking
+  % caption=\lstname,                   	% show the filename of files included with \lstinputlisting; also try caption instead of title
+  % captionpos=b,                    	% sets the caption-position to bottom
+  columns=fixed,
+  commentstyle=\color[rgb]{0.133,0.545,0.133},     			% comment style
+  % commentstyle=\color{black}
+  deletekeywords={hat,se},            	% if you want to delete keywords from the given language
+  % escapeinside={\%*}{*)},          	% if you want to add LaTeX within your code
+  extendedchars=true,              		% lets you use non-ASCII characters; for 8-bits encodings only, does not work with UTF-8
+  firstnumber=1,						% start first number at 1 if importing multiple code files
+  % frame=single,                    	% adds a frame around the code
+  identifierstyle=\ttfamily\color[rgb]{0,0,0},
+  keepspaces=true,                 		% keeps spaces in text, useful for keeping indentation of code (possibly needs columns=flexible)
+  keywordstyle=\bfseries\ttfamily\color[rgb]{0,0,1},       	% keyword style
+  % keywordstyle=\color{black},
+  morekeywords={pdf,lty,lwd,col,xlim,ylim,xlab,ylab,type,main,head,header,TRUE,True,T,true,FALSE,F,False,false},            		% if you want to add more keywords to the set
+  numbers=left,                    		% where to put the line-numbers; possible values are (none, left, right)
+  numberfirstline=true,					% number the first line in your code file or not
+  numbersep=5pt,                   		% how far the line-numbers are from the code
+  numberstyle=\tiny\color[rgb]{0.5,0.5,0.5}, 				% the style that is used for the line-numbers
+  % rulecolor=\color{black},         	% if not set, the frame-color may be changed on line-breaks within not-black text (e.g. comments (green here))
+  showspaces=false,                		% show spaces everywhere adding particular underscores; it overrides 'showstringspaces'
+  showstringspaces=false,          		% underline spaces within strings only
+  showtabs=false,                  		% show tabs within strings adding particular underscores
+  stepnumber=5,                    		% the step between two line-numbers. If it's 1, each line will be numbered 
+  stringstyle=\ttfamily\color[rgb]{0.627,0.126,0.941},     	% string literal style
+  % stringstyle=\bfseries\ttfamily\color[rgb]{0.5,0,0.5},       	% keyword style
+  % stringstyle=\color{black},								  % string literal style
+  tabsize=3,                       		% sets default tabsize to 2 spaces
+  % title=\lstname,                   	% show the filename of files included with \lstinputlisting; also try caption instead of title
+  upquote=true,
+  xleftmargin=.15in,						% indent the left margin including line numbers and code  
+  literate=									% colors numbers but the * makes it only color outside comments and strings
+    *{0}{{{\color[rgb]{0.95,0.25,0}0}}}1
+    {1}{{{\color[rgb]{0.95,0.25,0}1}}}1
+    {2}{{{\color[rgb]{0.95,0.25,0}2}}}1
+    {3}{{{\color[rgb]{0.95,0.25,0}3}}}1
+    {4}{{{\color[rgb]{0.95,0.25,0}4}}}1
+    {5}{{{\color[rgb]{0.95,0.25,0}5}}}1
+    {6}{{{\color[rgb]{0.95,0.25,0}6}}}1
+    {7}{{{\color[rgb]{0.95,0.25,0}7}}}1
+    {8}{{{\color[rgb]{0.95,0.25,0}8}}}1
+    {9}{{{\color[rgb]{0.95,0.25,0}9}}}1
+}
+
+\newcommand{\tab}{\hspace*{1.0em}} % multiple of width of a capital M
+\newcommand{\imply}{\tab \Longrightarrow \tab}
+
+
+\begin{document}
+
+	\begin{titlepage}
+	\newgeometry{margin = 0.75in}
+	\vspace*{1.5in}
+	\noindent\rule{\textwidth}{1pt}
+	\begin{flushright}
+		\LARGE \textbf{Michael Bissell} \\ \vspace{0.5in}
+		\Large STA 250 \\
+		\large \textit{Advanced Statistical Computing} \\ \vspace{0.5in}
+		\Large Final Project \\
+		\large	\textit{Adventures in RHadoop} 
+	\end{flushright}
+	\noindent\rule{\textwidth}{1pt}
+	\end{titlepage}
+	\restoregeometry
+
+
+%	\vspace*{-.2in}
+%	\hrule
+%	\begin{center}
+%		\LARGE
+%		\textbf{Michael Bissell} \\
+%		\Large
+%		STA 250 Homework 2 \\
+%		Code Swap Review 	
+%	\end{center}
+%	\vspace{-.2in}
+%	\noindent\rule{\textwidth}{1pt} \\ 
+	
+
+	%\noindent
+	\begin{enumerate}
+	    \item \Large\underline{Introduction}\normalsize \\
+	    
+	    	In assignment \#2 of the STA 250: Advanced Statistical Computing course, we had an introduction to the ``Bag of Little Bootstraps'' algorithm.  Similar to the original concept of the bootstrap and other resampling methods, the core idea is that if we can generate enough random samples from our dataset, i.e. subsets, and compute values of our estimator(s), then we can approximate the sampling distribution of our estimators and in doing so, we can also estimate the standard error(s) of our estimator(s).  This gives us a quality measure for our estimate(s).  \\
+	    	
+	    	The secret sauce that the Bag of Little Bootstraps brings to these existing and well known methods is that it is ``embarrassingly parallel'' in design and thus very amenable to large scale datasets where the original bootstrap may suffer from computational bottlenecks.  In particular, the Bag of Little Bootstraps in our regression example can be programmed in such a way that the desired number of iterations used in the final computation of each estimate can be run completely in parallel and is independent of each other estimate, then simply combined in the final consolidation step.  Whereas the original bootstrap method samples from the full data a large number of times, the Bag of Little Boostraps algorithm first subsets the full dataset in smaller chunks, each of which is then bootstrap resampled to get parameter estimates, and finally all estimates are then consolidated.  This gives us and approximation to the sampling distribution of the estimates along with approximations of the standard errors.  This makes the Bag of Little Bootstraps much more computationally efficient than the original bootstrap method and thus is extremely useful for very large datasets.  \\
+	    	
+	    	This report seeks to extend the work we did in that assignment by running some empirical studies on sensitivity of the estimates and standard errors to various choices in the number of subsets, the number of bootstrap samples, and the number of elements in each subset, namely, r, s, and $\gamma$ in our algorithm, and seeks to replicate results found in the Kleiner, et. all paper, A Scalable Bootstrap for Massive Data (2011) as well as in Efron and Tibshirani, An Introduction to the Bootstrap (1993).  In addition, we seek to frame these tradeoffs with respect to runtimes. \\
+	    	
+	    	Lastly, we will take a quick tour with an experimental R package called `segue' that allows one to connect their R session to Amazon Web Services Elastic MapReduce to run R scripts. We will just get our feet wet with a few basic examples to get up and running, document how we achieved this, and leave more complicated use cases for another time.  \\
+	    
+	    \item \Large\underline{Methodology}\normalsize \\
+
+			We begin with a discussion of the algorithm construction within the context of our original regression problem.  Our goal was to fit an ensemble of simple linear regressions on d=1,000 covariates with no intercept term, where the errors are distributed as $N(0,\sigma^2)$.  We then use this as an approximation of the sampling distrubtion of $\widehat{\beta}$ and use the estimates returned to compute approximations for the standard errors of $\widehat{\beta_1}, \ldots, \widehat{\beta_{1000}}$.  \\
+			
+			Our workflow was to first subset the original full dataset into $s=5$ distinct subsamples of size $b = n^{\gamma} = 1,000,000^{0.7} = 15849$ \textit{\underline{without}} replacement and selected from the full dataset of n=1,000,000 rows.  Then for each of those distinct subsamples/subsets, we resampled $r=50$ bootstrap subsamples n=1,000,000 times from the distinct subset \textit{\underline{with}} replacement, to ensure that we get a representative sample from the bootstrap.  Each bootstrap subsample is selected using a multinomial probability to distribute n balls into b boxes where each box has equal probability, i.e. $1/b$.  This gives us the weights (i.e. number of replications) to put on each of the b bootstrapped row indices in our subsample so that we get a bootstrap sample of size n.  We then pass in just the unique bootstrap sample rows and the multinomial counts for each of those rows, i.e. weights, which dramatically improves the computational speed of the regression fitting procedure, lm() in R due to smaller matrix solves.  This computational gain combined with the fact that we can run many regressions on smaller subsets in parallel is where the big computational gains are.  The linear regressions computed using the lm() function return the 1,000 coefficient estimates for the 250 jobs, thus allowing us to compute standard errors for each of the $\widehat{\beta_1}, \ldots, \widehat{\beta_{1000}}$.  As a reference point, the 250 jobs run in parallel with s=5, r=50 and $\gamma = 0.70$ took less than 5 minutes to run and produced standard errors of approximately 0.01, as expected. \\
+			
+			To ensure the implementation was correctly using the $s=5$ distinct subsets, each of which spawned $r=50$ bootstrap samples, we pass around the random number generator seed to each of the 250 jobs.  We use mod 5 on the job number to determine which of the s\_index datasets the current job should be assigned to and then assign the seed as a function of the s\_index making sure there is no overlap with the other s\_index jobs in getting the distinct subsample of size b.  Then we assign the r\_index as $ceil(job\_num/r)$ allowing us to reset the seed as a function of the s\_index and the r\_index to ensure the correct s\_index subsample has r\_index distinct bootstrap samples. \\
+						
+			This report aims to address the question of how should one choose the values of r, s and $\gamma$ so that we can have a well-balanced tradeoff between computational simplicity, speed, and accuracy in our estimates.  Because we start with a regression problem with which we already know the answer and since the standard errors of the $\beta$ coefficients are known to be approximately 0.01 for this simulated dataset, we start with that as a very simplistic baseline from which we can empirically judge performance for other values of r, s, and $\gamma$.  We start with investigating the choice of $\gamma$ for fixed values of s=5 and r=50 by running the Bag of Little Bootstraps algorithm over $\gamma = 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90$.  We then examine plots of the standard errors of the $\beta$ coefficients as well as look at metrics such as the interquartile range of the standard errors and the variance of the standard errors, again because we simplistically assume they are all approximately 0.01.  Similarly, we examine choices of r and s by fixing $\gamma = 0.70$ and allowing pairs of r and s such that $r \times s = 250$, i.e. (5,50), (10,25), (25,10), and (50,5).  Finally, we must make these decisions taking into consideration total runtime for different sets of parameters.  Our methodology with respect to timing is to time a single process with fixed values of s=5 and r=50 while letting $\gamma$ range over values 0.50 to 0.90 since this algorithm is inherently parallel and thus with an uncongested cluster with an appropriate numbers of cores could run many of these jobs and thus for timing purposes it would be best to time a single job so as not to have results influence by other jobs. \\
+			
+	    \item \Large\underline{Results}\normalsize \\
+	    
+		    As mentioned above, we investigate the choice of $\gamma$ by using fixed values of s=5 and r=50, then run the Bag of Little Bootstraps algorithm over $\gamma = 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90$.	 Again, we start with the simplistic assumption that the correct standard errors of $\widehat{\beta}$ are all approximately 0.01 and thus we look at summary statistics of the full set of $\widehat{\beta}$'s.  The first thing we see in Table \ref{gammatable} below is that the summary statistics for $\gamma = 0.50$ look suspicious but results from the fact that taking a bootstrap sample of size n=1,000,000 from such a small subset of b=1,000 and doing this 250 times means that we will get virtually no variability in our estimates.  Next, we notice that the interquartile range of the standard errors and the standard deviation of the standard errors begins declining as we increase $\gamma$ from 0.55 to 0.75 and then begins to increase slightly for values of $\gamma$ between 0.80 and 0.90.  This would suggest that there is some sweet spot in the trade off between a tighter IQR and computational demands from the data size somewhere around $\gamma=0.70$ range. However, we do point out that this difference is in the 5th decimal place and would be very hard to distinguish as statistically different.  We see the same basic pattern with the standard deviation.  We then look at the IQR for each value of $\gamma$ relative to $\gamma=0.70$ and we can see that there is approximately a 6 \% reduction in IQR from when $\gamma=0.55$ to $\gamma=0.70$ with a potential gain of another 2\% gain going to $\gamma=0.75$.  Again, we see the same basic pattern with the standard deviation.  
+			\begin{table}[H]
+				\centering \footnotesize
+				\begin{tabular}{lrrrrrrrrr} 
+				  \hline
+				  \multicolumn{10}{c}{Empirical Results for $\gamma$} \\
+				  \hline
+				  Gamma & 0.50 & 0.55 & 0.60 & 0.65 & 0.70 & 0.75 & 0.80 & 0.85 & 0.90 \\ 			
+				  b = $n^\gamma$ & 1000 & 1995 & 3981 & 7943 & 15849 & 31623 & 63096 & 125893 & 251189 \\ 
+				  \hline
+				  Min & 3.44E-13 & 0.00860 & 0.00855 & 0.00864 & 0.00839 & 0.00872 & 0.00867 & 0.00824 & 0.00828 \\ 
+				  Q1 & 8.50E-13 & 0.00966 & 0.00959 & 0.00967 & 0.00964 & 0.00964 & 0.00962 & 0.00961 & 0.00976 \\ 
+				  Med & 1.12E-12 & 0.00997 & 0.00992 & 0.00997 & 0.00993 & 0.00995 & 0.00993 & 0.00990 & 0.01006 \\ 
+				  Mean & 1.21E-12 & 0.00998 & 0.00992 & 0.00998 & 0.00994 & 0.00995 & 0.00994 & 0.00991 & 0.01008 \\ 
+				  Q3 & 1.51E-12 & 0.01031 & 0.01022 & 0.01029 & 0.01025 & 0.01024 & 0.01025 & 0.01022 & 0.01040 \\ 
+				  Max & 2.91E-12 & 0.01135 & 0.01161 & 0.01152 & 0.01140 & 0.01141 & 0.01144 & 0.01172 & 0.01155 \\ 
+				  SD & 4.73E-13 & 0.00048 & 0.00047 & 0.00046 & 0.00046 & 0.00046 & 0.00045 & 0.00047 & 0.00048 \\ 
+				  IQR & 6.55E-13 & 0.00065 & 0.00063 & 0.00062 & 0.00061 & 0.00060 & 0.00063 & 0.00061 & 0.00064 \\ 
+				  IQR relative to $\gamma=0.70$ & 1.07E-09 & 1.06360 & 1.02610 & 1.01140 & 1.00000 & 0.98530 & 1.02610 &1.00330 & 1.05060 \\
+				  SD relative to $\gamma=0.70$ & 1.74E-06 & 1.04421 & 1.02274 & 1.00789 & 1.00000 & 1.01289 & 0.98340 & 1.02601 & 1.04973 \\
+				  Runtime (sec) & 4.185 & 7.71 & 12.79 & 25.09 & 47.01 & 47.09 & 176.04 & 412.19 & 856.89 \\
+		   		\hline
+				\end{tabular}
+				\caption{Summary statistics for various values of $\gamma$ and fixed values of r and s}
+				\label{gammatable}				
+			\end{table} \normalsize		    
+			
+			In the figures shown below, we see index plots of the standard errors for various values of $\gamma$ along with dashed lines at the 5th and 95th percentiles.  Again, it is very difficult to discern a practical difference in these plots.	    
+			\begin{figure}[H]
+				\centering
+				\includegraphics[scale=0.50]{index_plot_se_s5_r50_g55.pdf}
+				\includegraphics[scale=0.50]{index_plot_se_s5_r50_g60.pdf} \\						
+				\caption{Plots of Standard Errors for Various Gamma}
+				\label{gammaplot1}
+			\end{figure}
+			\newpage
+			\begin{figure}[H]
+				\centering
+				\includegraphics[scale=0.50]{index_plot_se_s5_r50_g65.pdf} 
+				\includegraphics[scale=0.50]{index_plot_se_s5_r50_g70.pdf} \\				
+				\includegraphics[scale=0.50]{index_plot_se_s5_r50_g75.pdf}			
+				\includegraphics[scale=0.50]{index_plot_se_s5_r50_g80.pdf} \\				
+				\includegraphics[scale=0.50]{index_plot_se_s5_r50_g85.pdf}			
+				\includegraphics[scale=0.50]{index_plot_se_s5_r50_g90.pdf} 			
+				\caption{Plots of Standard Errors for Various Gamma}
+				\label{gammaplot2}
+			\end{figure}
+	    	
+		    Thus, all else equal, the choice of $\gamma$ in the range of 0.60 to 0.70 will likely produce reasonable results with a good balance in the trade-off in computation time required.  This lends empirical support to this range of $\gamma$ as intuitive in light of the statement in Kleiner paper that "a simple and standard calculation (Efron and Tibshirani, 1993) shows that each bootstrap resample contains approximately 0.632n distinct points." \\
+	    
+	    	Referring back to Table \ref{gammatable} above, we now turn our attention to runtimes.  Here we see that there are exponential increases in runtimes for values of $\gamma$ from 0.80 and above.  As marked on the plot in Figure \ref{runtimes} below, $\gamma=0.70$ again seems to be a reasonable trade off between speed and estimate quality.
+			\begin{figure}[H]
+				\centering
+				\includegraphics[scale=0.50]{runtimes.pdf}					
+				\caption{Plot of Runtime versus log(b)}
+				\label{runtimes}
+			\end{figure} 
+	    	
+	    	Lastly, we turn our attention to varying values of r and s while holding $\gamma$ fixed.  In order to keep the comparisons relatively apples-to-apples, we fixed the total number of jobs at 250, fixed the value of $\gamma=0.70$, and then for convenience ran the batch jobs with values of s and r, in that order, with the following pairs, (5,50), (10,25), (25,10), and (50,5).  As can be seen in Table \ref{rstable} below, there does not seem to be much difference among the pairs of s and r of (5,50), (10,25), (25,10) in terms of IQR or SD.  However, it does seem clear that pair of s and r of (50,5) clearly does not perform well.  This makes some intuitive sense.  For the (s,r) pair (5,50), what we are really doing is averaging a larger number of subsamples, r=50, from each of the s=5 subsets, this gives us a reasonably high quality estimate.  Howver, the pair (50,5) is really averaging only r=5 subsamples over s=50 subsets, thus we have very small subsample sizes and no surprise that this results in a poor quality estimate.  As a result, one should take r to relative large compare to s.
+	    	\begin{table}[H]
+		    	\centering \footnotesize
+		    	\begin{tabular}{lrrrr}
+		    	  \hline
+		    		s & 5 & 10 & 25 & 50 \\ 	    	
+		    	  	r & 50 & 25 & 10 & 5 \\ 
+		    	  \hline
+		    	  Min & 0.00839 & 0.00842 & 0.00849 & 0.00778 \\ 
+		    	  Q1 & 0.00964 & 0.00962 & 0.00942 & 0.00906 \\ 
+		    	  Med & 0.00993 & 0.00990 & 0.00971 & 0.00937 \\ 
+		    	  Mean & 0.00994 & 0.00991 & 0.00972 & 0.00939 \\ 
+		    	  Q3 & 0.01025 & 0.01022 & 0.01002 & 0.00973 \\ 
+		    	  Max & 0.01140 & 0.01135 & 0.01109 & 0.01094 \\ 
+		    	  SD & 0.00046 & 0.00046 & 0.00046 & 0.00049 \\ 
+		    	  IQR & 0.00061 & 0.00060 & 0.00061 & 0.00066 \\ 
+		    	  IQR Relative to s=5, r = 25 & 1.02167 & 1.00000 & 1.01000 & 1.10833 \\
+		    	  SD Relative to s=10, r = 25 & 1.00366 & 1.00000 & 1.01535 & 1.08013 \\
+		    	   \hline
+		    	\end{tabular}
+				\caption{Summary Statistics for various values of r and s for fixed $\gamma$}
+				\label{rstable}
+	    	\end{table}
+	    
+	    \item \Large\underline{Conclusions}\normalsize \\  
+	    
+	    	The key points that a reader should take away from this report is that in the context of our Bag of Little Boostraps regression problem, it seems that choices of $\gamma$ in the 0.60 to 0.70 produce reasonable quality estimates with relatively reasonable computational runtimes and this works particularly well when the number of bootstrap subsamples r is large relative to the number of subset datasets s. \\
+	    
+	    \item \Large\underline{Possible Extensions}\normalsize \\
+	    
+		    One extension that could add value is to break down the runtimes into more detailed steps since it seemed from just a simple tail -f on the .out file that the lm() step was the real bottleneck.  \\
+		    
+		    Another obvious extension is to run the analysis on other datasets and other models and see if the same general rules of thumb still hold. \\
+	    
+	    \item \Large\underline{Self-Criticisms}\normalsize \\
+	    
+	    	One obvious criticism is that this is a purely ad hoc, empirical study that does not use an formal statistical tests and relies mainly on exploratory analysis.  A key assumption is that this problem had a known answer from a simulated dataset and we assumed that all the standard errors were on the same scale and thus look at the total variation in all $\widehat{\beta}$'s simultaneously.  Clearly this would not be possible if the variation in the $\widehat{\beta}$'s was not on the same scale and thus this is very problem specific.  \\
+
+	\end{enumerate}
+	\noindent\rule{\textwidth}{1pt} \\
+	
+	\newpage
+	
+	\begin{enumerate}
+		\item \Large\underline{Introduction to the R package `segue'}\normalsize \\
+
+			``Segue has a simple goal: Parallel functionality in R; two lines of code; in under 15 minutes. No shit.'' \\
+			
+			Who could possibly resist installing a package with such a cool tag line? The key feature of the segue packages is that it lets you use Elastic MapReduce as a backend for lapply-style operations.  This is essentially a parallel computing approach similar to using a cluster such as Gauss only it uses AWS EMR as the backend.  Note that this is not meant to be a full-blown MapReduce paradigm.  \\
+			
+			The code base for the package is not available on CRAN, but rather is hosted on Google Code along with a Google Forum as it appears to still be a very experimental package.  It can be found here: \\
+			http://code.google.com/p/segue/ \\		
+			https://groups.google.com/forum/\#!forum/segue-r \\
+			
+			I began by following the instructions found in the following Jeffrey Breen article and will attempt to add additional details relevant to our servers. \\	 
+			http://jeffreybreen.wordpress.com/2011/01/10/segue-r-to-amazon-elastic-mapreduce-hadoop/ \\
+			
+			\begin{enumerate}
+			
+				\item Preliminaries \\
+					
+					*Note*: segue works only on Mac and Linux, but not Windows. \\
+					
+					*Note*: I had problems installing and running segue on R.3.x.x on Pearson and Lipschitz.  But was successful in installing and running segue on the Macro server with R.2.13.x.  Additionally note that even on the Macro server, if you simply type R and entering into an interactive terminal session, you will fire up R 3.0.2 as the default.  You may need to go to /usr/local/lib64/R/bin/R to launch R.2.15 on Macro server. \\
+					
+					*Note*: you will need AWS credentials \\
+					
+					*Note*: segue requires the packages rJava, caTools and bitops if they are not currently installed. \\
+				
+				\item Install the `seque' package in R. \\
+				
+					*Note*: segue works only on Mac and Linux, but not Windows. \\
+					
+					Go get the tar ball from Google Code repository that will be used to install the segue package: \\
+					http://code.google.com/p/segue/downloads/list \\
+					
+					The fastest way to get the tar ball is to log into the Macro (or other department server) and do mget: 
+					\footnotesize\begin{verbatim}   wget http://segue.googlecode.com/files/segue_0.05.tar.gz \end{verbatim}\normalsize 
+					
+					Alternatively, you could download the segue\_0.05.tar.gz file directly to your local directory and then use WinSCP to transfer it onto one of the servers or, once on the server, use scp. \\
+					
+					Now do the actual installation for R by running the following command line directly on the server (not in an interactive R session): 
+					 
+					\footnotesize\begin{verbatim}   
+					   R CMD INSTALL segue_0.05.tar.gz 
+					\end{verbatim}\normalsize 
+					
+					Alternatively, you can open an interactive R session from the Linux command line by simply typeing `R' to get a terminal R session loaded, or you may have to use /usr/local/lib64/R/bin/R to launch R.2.15 on Macro server ro similar directory paths on other servers.  Then install the package using the command line below (with obvious edits for the path to the tar ball): 
+					
+					\footnotesize\begin{verbatim}   
+					   install.packages("/home/mbissell/Stuff/FinalProject/segue_0.05.tar.gz", 
+					                     repos=NULL, type="source") 
+					\end{verbatim}\normalsize
+					
+					You may get a similar error message as follows.  Select `y' to use a personal library and `y' to create a personal library directory: 
+					
+					\footnotesize\begin{verbatim}
+					   Warning in install.packages("/home/mbissell/Stuff/FinalProject/segue_0.05.tar.gz",  :
+					     'lib = "/usr/local/R-3.0.2/lib64/R/library"' is not writable
+					   Would you like to use a personal library instead?  (y/n) y
+					   Would you like to create a personal library
+					   ~/R/x86\_64-unknown-linux-gnu-library/3.0
+					   to install packages into?  (y/n) y
+					\end{verbatim}\normalsize
+					
+					You may also get error messages as follows.  Identify which dependencies are not already installed and install them from CRAN using install.packages: 
+					
+					\footnotesize\begin{verbatim}
+					   ERROR: dependencies ‘rJava’, ‘caTools’ are not available for package ‘segue’
+					   * removing ‘/home/mbissell/R/x86\_64-unknown-linux-gnu-library/2.15/segue’ 
+					   Warning message: 
+					   In install.packages("/home/mbissell/Project/segue\_0.05.tar.gz",  : 
+					     installation of package ‘/home/mbissell/Project/segue\_0.05.tar.gz’ had non-zero exit status 			
+					\end{verbatim}\normalsize
+					
+					I also had to install the `rJava', `caTools', and `bitops' packages. \\
+					
+				\item Load the segue package. \\
+				
+					First load R: \\
+					/usr/local/lib64/R/bin/R to launch R.2.15 on Macro server 
+					
+					\footnotesize\begin{verbatim}
+					   > library(segue)
+					   Loading required package: rJava 
+					   Loading required package: caTools
+					   Loading required package: bitops
+					   Segue did not find your AWS credentials. Please run the setCredentials() function.
+					\end{verbatim}\normalsize
+					
+				\item Set your Amazon Credentials (this appears to be needed for each R session). \\
+						
+					You can find instructions on how to get your security credentials here: \\
+					https://console.aws.amazon.com/iam/home?\#security\_credential \\
+					*Note*: that you need to have your own account or be an administrator for your account to generate and save keys.  Fortunately, AWS has a free tier that you can sign up for.
+						
+					Follow the instructions on the AWS security credentials website and generate an access key and a secret key.  They should pop up in a dialog box and also allow you to save them a file.  They should look something like this:\\
+					-AccessKey AKIAIOSFODNN7EXAMPLE \\
+					-SecretKey wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY \\
+					
+					Now go back to your R session and set your credentials by running the following command (with obvious edits for your own actual credentials): 
+					
+					\footnotesize\begin{verbatim}
+					   setCredentials("AKIAIOSFODNN7EXAMPLE", 
+					                  "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY", 
+					                  setEnvironmentVariables=TRUE) 
+					\end{verbatim}\normalsize
+					   
+				\item Create a cluster on AWS EMR directly from your R session.\\ \footnotesize
+					\begin{verbatim}
+						> myCluster <- createCluster(numInstances=5) 
+						STARTING - 2011-01-04 15:07:53
+						STARTING - 2011-01-04 15:08:24
+						STARTING - 2011-01-04 15:08:54
+						STARTING - 2011-01-04 15:09:25
+						STARTING - 2011-01-04 15:09:56
+						STARTING - 2011-01-04 15:10:27
+						STARTING - 2011-01-04 15:10:58
+						BOOTSTRAPPING - 2011-01-04 15:11:28
+						BOOTSTRAPPING - 2011-01-04 15:11:59
+						BOOTSTRAPPING - 2011-01-04 15:12:30
+						BOOTSTRAPPING - 2011-01-04 15:13:01
+						BOOTSTRAPPING - 2011-01-04 15:13:32
+						BOOTSTRAPPING - 2011-01-04 15:14:03
+						BOOTSTRAPPING - 2011-01-04 15:14:34
+						BOOTSTRAPPING - 2011-01-04 15:15:04
+						WAITING - 2011-01-04 15:15:35
+						Your Amazon EMR Hadoop Cluster is ready for action. 
+						Remember to terminate your cluster with stopCluster().
+						Amazon is billing you! 
+					\end{verbatim}  \normalsize
+										
+				\item Now run some code (in parallel of course). \\ \footnotesize
+					\begin{verbatim}
+							> # first, let's generate a 10-element list of 999 random numbers + 1 NA:
+							 
+							myList <- NULL
+							set.seed(1)
+							for (i in 1:10){
+							   a <- c(rnorm(999), NA)
+							   myList[[i]] <- a
+							   }
+							 
+							> # now run it on the cluster
+							> outputEmr   <- emrlapply(myCluster, myList, mean,  na.rm=T)
+							RUNNING - 2011-01-04 15:16:57
+							RUNNING - 2011-01-04 15:17:27
+							RUNNING - 2011-01-04 15:17:58
+							WAITING - 2011-01-04 15:18:29
+							>
+							
+							> # since this is a toy test case, we can run it locally to compare:
+							> outputLocal  <- lapply(myList, mean, na.rm=T)
+																					 
+							> all.equal(outputEmr, outputLocal)
+							[1] TRUE
+							
+							
+							
+							> estimatePi <- function(seed){
+							   set.seed(seed)
+							   numDraws <- 1e6
+							 
+							   r <- .5 #radius... in case the unit circle is too boring
+							   x <- runif(numDraws, min=-r, max=r)
+							   y <- runif(numDraws, min=-r, max=r)
+							   inCircle <- ifelse( (x^2 + y^2)^.5 < r , 1, 0)
+							 
+							   return(sum(inCircle) / length(inCircle) * 4)
+							 }
+							 
+							> seedList <- as.list(1:1e3)
+							 
+							> myEstimates <- emrlapply( myCluster, seedList, estimatePi )
+							RUNNING - 2011-01-04 15:22:28
+							RUNNING - 2011-01-04 15:22:59
+							RUNNING - 2011-01-04 15:23:30
+							RUNNING - 2011-01-04 15:24:01
+							RUNNING - 2011-01-04 15:24:32
+							RUNNING - 2011-01-04 15:25:02
+							RUNNING - 2011-01-04 15:25:34
+							RUNNING - 2011-01-04 15:26:04
+							RUNNING - 2011-01-04 15:26:39
+							RUNNING - 2011-01-04 15:27:10
+							RUNNING - 2011-01-04 15:27:41
+							RUNNING - 2011-01-04 15:28:11
+							RUNNING - 2011-01-04 15:28:42
+							RUNNING - 2011-01-04 15:29:13
+							RUNNING - 2011-01-04 15:29:44
+							RUNNING - 2011-01-04 15:30:14
+							RUNNING - 2011-01-04 15:30:45
+							RUNNING - 2011-01-04 15:31:16
+							RUNNING - 2011-01-04 15:31:47
+							WAITING - 2011-01-04 15:32:18
+							 
+							> stopCluster(myCluster)
+							> head(myEstimates)
+							[[1]]
+							[1] 3.142512
+							 
+							[[2]]
+							[1] 3.140052
+							 
+							[[3]]
+							[1] 3.138796
+							 
+							[[4]]
+							[1] 3.145028
+							 
+							[[5]]
+							[1] 3.14204
+							 
+							[[6]]
+							[1] 3.142136
+							 
+							> # Reduce() is R's Reduce() -- look it up! -- and not related to the cluster:
+							> myPi <- Reduce(sum, myEstimates) / length(myEstimates)
+							 
+							> format(myPi, digits=10)
+							[1] "3.141586544"
+							 
+							> format(pi, digits=10)
+							[1] "3.141592654"							
+					\end{verbatim}	\normalsize		
+					
+					 I worked through the first two code examples and the actually got segfaults in R:
+					 
+					 \footnotesize\begin{verbatim}
+					
+					 *** caught segfault ***
+					address 0xc0006, cause 'memory not mapped'
+					
+					Possible actions:
+					1: abort (with core dump, if enabled)
+					2: normal R exit
+					3: exit R without saving workspace
+					4: exit R saving workspace
+					Selection:
+					 *** caught segfault ***
+					address 0x88, cause 'memory not mapped'
+					
+					Possible actions:
+					1: abort (with core dump, if enabled)
+					2: normal R exit
+					3: exit R without saving workspace
+					4: exit R saving workspace
+					Selection:
+					 *** caught segfault ***
+					address 0xcf58ed68, cause 'memory not mapped'
+					
+					Possible actions:
+					1: abort (with core dump, if enabled)
+					2: normal R exit
+					3: exit R without saving workspace
+					4: exit R saving workspace
+					Selection: Segmentation fault
+					\end{verbatim}	\normalsize								
+					
+			\end{enumerate}					
+			
+	\end{enumerate}    	
+	
+	%\noindent
+	%17.19) Main question with graphs and tables
+	%
+	%	%%%%%%%%%%%%%%%%%%%%%%%%
+	%	% Plots with caption and label for referencing
+	%	%%%%%%%%%%%%%%%%%%%%%%%%
+	
+	%		\begin{figure}[H]
+	%			\centering
+	%			\includegraphics[scale=0.5]{timeseries.pdf}
+	%			\includegraphics[scale=0.5]{timeseries2.pdf}
+	%			\caption{Log Receipts and polynomial trends of degree 1 through 5}
+	%			\label{timeseries}
+	%		\end{figure}
+	%		
+	%		The graphs in Figure \ref{timeseries} we see a plot of the raw data time series.
+	
+	%%%%%%%%%%%%%%%%%%%%%%%%
+	% References
+	%%%%%%%%%%%%%%%%%%%%%%%%
+	\newpage
+	
+	\noindent\rule{\textwidth}{1pt} \\
+	
+	\textbf{\underline{References}} \\
+	
+	\noindent B. Efron and R. Tibshirani. An Introduction to the Bootstrap. Chapman and Hall, 1993. \\
+	
+	\noindent Kleiner, A., Talwalkar, A., Sarkar, P., Jordan, M.I. (2011) A Scalable Bootstrap for Massive Data. arXiv: 1112.5016 \\
+	
+	
+	
+	%%%%%%%%%%%%%%%%%%%%%%%%
+	% Code appendix
+	%%%%%%%%%%%%%%%%%%%%%%%%
+	\newpage
+	
+	\noindent\rule{\textwidth}{1pt} 
+	\begin{center} 
+		Code Appendix
+	\end{center}
+	\vspace*{-7pt}
+	\noindent\rule{\textwidth}{1pt} \\
+	\lstinputlisting{"BLB_lin_reg_job.R"}
+	\noindent\rule{\textwidth}{1pt} \\
+	
+\end{document}
